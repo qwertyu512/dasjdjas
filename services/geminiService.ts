@@ -3,17 +3,17 @@ import { GoogleGenAI } from "@google/genai";
 import { ImageData } from "../types";
 
 /**
- * Initialize GoogleGenAI with process.env.API_KEY.
- * In the Puter environment, this key is managed automatically.
+ * Puter environment provides the API key automatically.
+ * We create a new instance for each call as per guidelines.
  */
 const getAIClient = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  return new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 };
 
 export const performVirtualTryOn = async (body: ImageData, outfit: ImageData): Promise<string> => {
   const ai = getAIClient();
   
-  // Using 'gemini-2.5-flash-image' which is the alias for 'nano banana'
+  // Use 'gemini-2.5-flash-image' for Free Unlimited Nano Banana API on Puter
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
     contents: {
@@ -31,17 +31,17 @@ export const performVirtualTryOn = async (body: ImageData, outfit: ImageData): P
           },
         },
         {
-          text: `You are an elite AI Fashion Stylist. 
-                 TASK: Perform a photorealistic virtual try-on.
-                 INPUT 1: A person's body/portrait.
-                 INPUT 2: A garment/outfit.
+          text: `Sen profesyonel bir yapay zeka moda stilistisin. 
+                 GÖREV: Gerçekçi bir sanal kıyafet denemesi gerçekleştir.
+                 GİRDİ 1: Kişinin vücut/portre fotoğrafı.
+                 GİRDİ 2: Bir kıyafet fotoğrafı.
                  
-                 INSTRUCTIONS:
-                 1. Seamlessly overlay the garment from Input 2 onto the person in Input 1.
-                 2. Preserve the person's facial features, skin tone, hair, and original background exactly.
-                 3. Adjust the garment's shape to match the person's pose and body contours.
-                 4. Match the lighting and shadows of the original scene for a natural look.
-                 5. Ensure realistic fabric draping and texture.`,
+                 TALİMATLAR:
+                 1. İkinci görseldeki kıyafeti, birinci görseldeki kişinin üzerine mükemmel şekilde giydir.
+                 2. Kişinin yüzünü, ten rengini ve orijinal arka planı olduğu gibi koru.
+                 3. Kıyafeti kişinin duruşuna ve vücut hatlarına göre uyarla.
+                 4. Işık ve gölgeleri sahneye uygun şekilde ayarla.
+                 5. Sonuç görsel olarak gerçekçi ve yüksek kalitede olmalıdır.`,
         },
       ],
     },
@@ -52,13 +52,12 @@ export const performVirtualTryOn = async (body: ImageData, outfit: ImageData): P
     }
   });
 
-  for (const part of response.candidates?.[0]?.content?.parts || []) {
-    if (part.inlineData) {
-      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-    }
+  const part = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
+  if (part?.inlineData) {
+    return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
   }
 
-  throw new Error("Görsel oluşturulamadı. Lütfen daha net fotoğraflar deneyin.");
+  throw new Error("Görsel oluşturulamadı. Lütfen fotoğrafların netliğinden emin olun.");
 };
 
 export const editImageWithPrompt = async (baseImage: string, prompt: string): Promise<string> => {
@@ -78,17 +77,16 @@ export const editImageWithPrompt = async (baseImage: string, prompt: string): Pr
           },
         },
         {
-          text: `Refine the current image based on this request: ${prompt}. Maintain the person and the outfit, focus on lighting, background, or artistic style changes.`,
+          text: `Görseli bu isteğe göre düzenle: ${prompt}. Kişiyi ve kıyafeti bozmadan sadece belirtilen değişikliği yap.`,
         },
       ],
     },
   });
 
-  for (const part of response.candidates?.[0]?.content?.parts || []) {
-    if (part.inlineData) {
-      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-    }
+  const part = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
+  if (part?.inlineData) {
+    return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
   }
 
-  throw new Error("Düzenleme başarısız oldu.");
+  throw new Error("Düzenleme yapılamadı.");
 };
