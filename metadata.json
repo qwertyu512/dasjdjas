@@ -1,0 +1,7 @@
+{
+  "name": "StyleSwap AI",
+  "description": "A high-end virtual try-on and AI-powered fashion editing application. Upload your photo and an outfit to see the magic happen.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
