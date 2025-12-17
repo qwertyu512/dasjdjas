@@ -1,19 +1,19 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { ImageData } from "../types";
+import { ImageData } from "../types.ts";
 
 /**
- * Puter environment provides the API key automatically.
- * We create a new instance for each call as per guidelines.
+ * Puter ortamı API anahtarını otomatik olarak enjekte eder.
+ * Bu fonksiyon, Nano Banana özelliklerini kullanmak için SDK'yı hazırlar.
  */
 const getAIClient = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 export const performVirtualTryOn = async (body: ImageData, outfit: ImageData): Promise<string> => {
   const ai = getAIClient();
   
-  // Use 'gemini-2.5-flash-image' for Free Unlimited Nano Banana API on Puter
+  // 'gemini-2.5-flash-image' Nano Banana serisinin görsel üretim/düzenleme modelidir.
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
     contents: {
@@ -38,10 +38,10 @@ export const performVirtualTryOn = async (body: ImageData, outfit: ImageData): P
                  
                  TALİMATLAR:
                  1. İkinci görseldeki kıyafeti, birinci görseldeki kişinin üzerine mükemmel şekilde giydir.
-                 2. Kişinin yüzünü, ten rengini ve orijinal arka planı olduğu gibi koru.
-                 3. Kıyafeti kişinin duruşuna ve vücut hatlarına göre uyarla.
-                 4. Işık ve gölgeleri sahneye uygun şekilde ayarla.
-                 5. Sonuç görsel olarak gerçekçi ve yüksek kalitede olmalıdır.`,
+                 2. Kişinin yüzünü, ten rengini, saçını ve orijinal arka planını aynen koru.
+                 3. Kıyafeti kişinin duruşuna ve vücut hatlarına göre uyarla (photorealistic draping).
+                 4. Işıklandırmayı ve gölgeleri sahneye uygun şekilde dengele.
+                 5. Kıyafet dokusunu (kumaş, parlaklık vs.) koru.`,
         },
       ],
     },
@@ -52,9 +52,11 @@ export const performVirtualTryOn = async (body: ImageData, outfit: ImageData): P
     }
   });
 
-  const part = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
-  if (part?.inlineData) {
-    return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+  const parts = response.candidates?.[0]?.content?.parts || [];
+  for (const part of parts) {
+    if (part.inlineData) {
+      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+    }
   }
 
   throw new Error("Görsel oluşturulamadı. Lütfen fotoğrafların netliğinden emin olun.");
@@ -77,16 +79,18 @@ export const editImageWithPrompt = async (baseImage: string, prompt: string): Pr
           },
         },
         {
-          text: `Görseli bu isteğe göre düzenle: ${prompt}. Kişiyi ve kıyafeti bozmadan sadece belirtilen değişikliği yap.`,
+          text: `Görseli bu isteğe göre düzenle: ${prompt}. Kişiyi ve kıyafeti bozmadan arka plan veya ışıklandırma gibi detayları değiştir.`,
         },
       ],
     },
   });
 
-  const part = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
-  if (part?.inlineData) {
-    return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+  const parts = response.candidates?.[0]?.content?.parts || [];
+  for (const part of parts) {
+    if (part.inlineData) {
+      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+    }
   }
 
-  throw new Error("Düzenleme yapılamadı.");
+  throw new Error("Düzenleme başarısız oldu.");
 };
